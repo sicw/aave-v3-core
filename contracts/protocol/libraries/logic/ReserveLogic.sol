@@ -50,6 +50,7 @@ library ReserveLogic {
     uint40 timestamp = reserve.lastUpdateTimestamp;
 
     //solium-disable-next-line
+    // 在同一个区块中计算过index, 就不再执行计算了
     if (timestamp == block.timestamp) {
       //if the index was updated in the same block, no need to perform any calculation
       return reserve.liquidityIndex;
