@@ -17,23 +17,29 @@ contract PoolStorage {
   using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
   using UserConfiguration for DataTypes.UserConfigurationMap;
 
+  // 资产储备数据 USDC <--> Data
   // Map of reserves and their data (underlyingAssetOfReserve => reserveData)
   mapping(address => DataTypes.ReserveData) internal _reserves;
 
+  // 用户地址和相关配置
   // Map of users address and their configuration data (userAddress => userConfiguration)
   mapping(address => DataTypes.UserConfigurationMap) internal _usersConfig;
 
+  // 储备id <--> 储备数据(节省gas原因)
   // List of reserves as a map (reserveId => reserve).
   // It is structured as a mapping for gas savings reasons, using the reserve id as index
   mapping(uint256 => address) internal _reservesList;
 
+  // 模式id <--> 模式
   // List of eMode categories as a map (eModeCategoryId => eModeCategory).
   // It is structured as a mapping for gas savings reasons, using the eModeCategoryId as index
   mapping(uint8 => DataTypes.EModeCategory) internal _eModeCategories;
 
+  // 用户地址 <-> 模式id
   // Map of users address and their eMode category (userAddress => eModeCategoryId)
   mapping(address => uint8) internal _usersEModeCategory;
 
+  // 协议桥费用
   // Fee of the protocol bridge, expressed in bps
   uint256 internal _bridgeProtocolFee;
 
