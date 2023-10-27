@@ -150,6 +150,7 @@ library BorrowLogic {
     );
 
     if (params.releaseUnderlying) {
+      // 接收标地资产
       IAToken(reserveCache.aTokenAddress).transferUnderlyingTo(params.user, params.amount);
     }
 
@@ -214,6 +215,7 @@ library BorrowLogic {
       paybackAmount = params.amount;
     }
 
+    // 减少贷款数额
     if (params.interestRateMode == DataTypes.InterestRateMode.STABLE) {
       (reserveCache.nextTotalStableDebt, reserveCache.nextAvgStableBorrowRate) = IStableDebtToken(
         reserveCache.stableDebtTokenAddress
@@ -244,6 +246,7 @@ library BorrowLogic {
     );
 
     if (params.useATokens) {
+      // 使用aToken归还
       IAToken(reserveCache.aTokenAddress).burn(
         msg.sender,
         reserveCache.aTokenAddress,
@@ -251,6 +254,7 @@ library BorrowLogic {
         reserveCache.nextLiquidityIndex
       );
     } else {
+      // 使用标地资产归还
       IERC20(params.asset).safeTransferFrom(msg.sender, reserveCache.aTokenAddress, paybackAmount);
       IAToken(reserveCache.aTokenAddress).handleRepayment(
         msg.sender,
@@ -288,6 +292,7 @@ library BorrowLogic {
 
     stableDebtToken.burn(user, stableDebt);
 
+    // 使用新利率重新mint
     (, reserveCache.nextTotalStableDebt, reserveCache.nextAvgStableBorrowRate) = stableDebtToken
       .mint(user, user, stableDebt, reserve.currentStableBorrowRate);
 
@@ -328,6 +333,7 @@ library BorrowLogic {
       interestRateMode
     );
 
+    // 先销毁掉, 然后重新burn
     if (interestRateMode == DataTypes.InterestRateMode.STABLE) {
       (reserveCache.nextTotalStableDebt, reserveCache.nextAvgStableBorrowRate) = IStableDebtToken(
         reserveCache.stableDebtTokenAddress
@@ -346,6 +352,7 @@ library BorrowLogic {
       ).mint(msg.sender, msg.sender, variableDebt, reserve.currentStableBorrowRate);
     }
 
+    // 更新利率
     reserve.updateInterestRates(reserveCache, asset, 0, 0);
 
     emit SwapBorrowRateMode(asset, msg.sender, interestRateMode);

@@ -64,9 +64,10 @@ library SupplyLogic {
 
     reserve.updateInterestRates(reserveCache, params.asset, params.amount, 0);
 
-    // 从资源配置中获取aToken地址
+    // 将资产从用户转给aToken
     IERC20(params.asset).safeTransferFrom(msg.sender, reserveCache.aTokenAddress, params.amount);
 
+    // 1:1的给用户mint aToken
     bool isFirstSupply = IAToken(reserveCache.aTokenAddress).mint(
       msg.sender,
       params.onBehalfOf,

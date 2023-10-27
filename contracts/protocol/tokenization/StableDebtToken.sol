@@ -145,6 +145,7 @@ contract StableDebtToken is DebtTokenBase, IncentivizedERC20, IStableDebtToken {
     vars.nextStableRate = (vars.currentStableRate.rayMul(currentBalance.wadToRay()) +
       vars.amountInRay.rayMul(rate)).rayDiv((currentBalance + amount).wadToRay());
 
+    // 更新利率
     _userState[onBehalfOf].additionalData = vars.nextStableRate.toUint128();
 
     //solium-disable-next-line
@@ -156,6 +157,7 @@ contract StableDebtToken is DebtTokenBase, IncentivizedERC20, IStableDebtToken {
         rate.rayMul(vars.amountInRay)).rayDiv(vars.nextSupply.wadToRay())
     ).toUint128();
 
+    // 稳定利率贷款数额 = 本次贷款 + 增长的利息
     uint256 amountToMint = amount + balanceIncrease;
     _mint(onBehalfOf, amountToMint, vars.previousSupply);
 

@@ -172,6 +172,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     bytes32 permitR,
     bytes32 permitS
   ) public virtual override {
+    // 线下签名
     IERC20WithPermit(asset).permit(
       msg.sender,
       address(this),

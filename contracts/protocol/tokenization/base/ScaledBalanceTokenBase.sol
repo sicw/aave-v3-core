@@ -69,17 +69,22 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
     uint256 amount,
     uint256 index
   ) internal returns (bool) {
+    // 应用缩放计算, 相当于预处理mint数量
     uint256 amountScaled = amount.rayDiv(index);
     require(amountScaled != 0, Errors.INVALID_MINT_AMOUNT);
 
     uint256 scaledBalance = super.balanceOf(onBehalfOf);
+
+    // 增加的数额 = 当前数额 - 上一次数额
     uint256 balanceIncrease = scaledBalance.rayMul(index) -
       scaledBalance.rayMul(_userState[onBehalfOf].additionalData);
 
+    // 更新这次的index
     _userState[onBehalfOf].additionalData = index.toUint128();
 
     _mint(onBehalfOf, amountScaled.toUint128());
 
+    // 发送消息, 本次新增的 + 产生的利息
     uint256 amountToMint = amount + balanceIncrease;
     emit Transfer(address(0), onBehalfOf, amountToMint);
     emit Mint(caller, onBehalfOf, amountToMint, balanceIncrease, index);
@@ -101,13 +106,17 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
     require(amountScaled != 0, Errors.INVALID_BURN_AMOUNT);
 
     uint256 scaledBalance = super.balanceOf(user);
+
+    // 计算这段时间的收益
     uint256 balanceIncrease = scaledBalance.rayMul(index) -
       scaledBalance.rayMul(_userState[user].additionalData);
 
     _userState[user].additionalData = index.toUint128();
 
+    // 销毁缩放数额
     _burn(user, amountScaled.toUint128());
 
+    // 收益 > 要取出
     if (balanceIncrease > amount) {
       uint256 amountToMint = balanceIncrease - amount;
       emit Transfer(address(0), user, amountToMint);

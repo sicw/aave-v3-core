@@ -101,6 +101,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
   ) external virtual override onlyPool {
     _burnScaled(from, receiverOfUnderlying, amount, index);
     if (receiverOfUnderlying != address(this)) {
+      // 给用户转标地资产
       IERC20(_underlyingAsset).safeTransfer(receiverOfUnderlying, amount);
     }
   }
