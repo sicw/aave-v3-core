@@ -69,13 +69,19 @@ library DataTypes {
     uint256 data;
   }
 
+  // https://docs.aave.com/developers/whats-new/efficiency-mode-emode
   struct EModeCategory {
     // each eMode category has a custom ltv and liquidation threshold
+    // 贷款价值比
     uint16 ltv;
+    // 清算门槛
     uint16 liquidationThreshold;
+    // 清算奖励
     uint16 liquidationBonus;
     // each eMode category may or may not have a custom oracle to override the individual assets price oracles
+    // 自定义价格预言机
     address priceSource;
+    // 标签
     string label;
   }
 
