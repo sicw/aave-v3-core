@@ -36,6 +36,7 @@ library DataTypes {
   }
 
   struct ReserveConfigurationMap {
+    // 贷款与抵押品价值比率, LTV=75%时, 1ETH价值的抵押品, 借款人能够接入0.75ETH价值的货币
     //bit 0-15: LTV
     //bit 16-31: Liq. threshold
     //bit 32-47: Liq. bonus
