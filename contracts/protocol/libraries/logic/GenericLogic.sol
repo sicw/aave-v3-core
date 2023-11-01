@@ -82,6 +82,7 @@ library GenericLogic {
     }
 
     while (vars.i < params.reservesCount) {
+      // 判断用户是否允许用该资产作为抵押
       if (!params.userConfig.isUsingAsCollateralOrBorrowing(vars.i)) {
         unchecked {
           ++vars.i;
@@ -89,6 +90,7 @@ library GenericLogic {
         continue;
       }
 
+      // 获取资产信息
       vars.currentReserveAddress = reservesList[vars.i];
 
       if (vars.currentReserveAddress == address(0)) {
@@ -98,6 +100,7 @@ library GenericLogic {
         continue;
       }
 
+      // 获取资产数据
       DataTypes.ReserveData storage currentReserve = reservesData[vars.currentReserveAddress];
 
       (
@@ -113,11 +116,13 @@ library GenericLogic {
         vars.assetUnit = 10 ** vars.decimals;
       }
 
+      // 获取价格
       vars.assetPrice = vars.eModeAssetPrice != 0 &&
         params.userEModeCategory == vars.eModeAssetCategory
         ? vars.eModeAssetPrice
         : IPriceOracleGetter(params.oracle).getAssetPrice(vars.currentReserveAddress);
 
+      // 清算阈值 != 0 && 允许做为抵押
       if (vars.liquidationThreshold != 0 && params.userConfig.isUsingAsCollateral(vars.i)) {
         vars.userBalanceInBaseCurrency = _getUserBalanceInBaseCurrency(
           params.user,
@@ -126,6 +131,7 @@ library GenericLogic {
           vars.assetUnit
         );
 
+        // 累计抵押的资产
         vars.totalCollateralInBaseCurrency += vars.userBalanceInBaseCurrency;
 
         vars.isInEModeCategory = EModeLogic.isInEModeCategory(
@@ -146,6 +152,7 @@ library GenericLogic {
           (vars.isInEModeCategory ? vars.eModeLiqThreshold : vars.liquidationThreshold);
       }
 
+      // 允许做为借款
       if (params.userConfig.isBorrowing(vars.i)) {
         vars.totalDebtInBaseCurrency += _getUserDebtInBaseCurrency(
           params.user,
