@@ -426,6 +426,8 @@ library ReserveConfiguration {
   }
 
   /**
+   * 如果资产处于隔离模式，则获取资产的债务上限
+   *
    * @notice Gets the debt ceiling for the asset if the asset is in isolation mode
    * @param self The reserve configuration
    * @return The debt ceiling (0 = isolation mode disabled)

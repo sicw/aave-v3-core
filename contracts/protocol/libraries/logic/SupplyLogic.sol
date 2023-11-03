@@ -60,8 +60,10 @@ library SupplyLogic {
 
     reserve.updateState(reserveCache);
 
+    // 校验是否超出最大存款容量、资金池是否冻结、激活、暂停
     ValidationLogic.validateSupply(reserveCache, reserve, params.amount);
 
+    // 更新当前存款、贷款(稳定/可变)利率
     reserve.updateInterestRates(reserveCache, params.asset, params.amount, 0);
 
     // 将资产从用户转给aToken
@@ -75,8 +77,10 @@ library SupplyLogic {
       reserveCache.nextLiquidityIndex
     );
 
+    // 判断是否是第一次存款
     if (isFirstSupply) {
       if (
+        // 校验是否可以作为抵押(用户是否是否使用隔离模式)
         ValidationLogic.validateUseAsCollateral(
           reservesData,
           reservesList,
@@ -84,6 +88,7 @@ library SupplyLogic {
           reserveCache.reserveConfiguration
         )
       ) {
+        // 做为抵押贷款, 在borrow贷款时, 可以遍历该用户的所有资产(可抵押的, 就是下面的设置) 计算是否够抵押的。
         userConfig.setUsingAsCollateral(reserve.id, true);
         emit ReserveUsedAsCollateralEnabled(params.asset, params.onBehalfOf);
       }

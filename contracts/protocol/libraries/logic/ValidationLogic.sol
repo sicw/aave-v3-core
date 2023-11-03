@@ -708,11 +708,14 @@ library ValidationLogic {
     DataTypes.UserConfigurationMap storage userConfig,
     DataTypes.ReserveConfigurationMap memory reserveConfig
   ) internal view returns (bool) {
+    // 用户纬度配置, 任何资产都可以抵押
     if (!userConfig.isUsingAsCollateralAny()) {
       return true;
     }
+    // 获取是否使用隔离模式
     (bool isolationModeActive, , ) = userConfig.getIsolationModeState(reservesData, reservesList);
 
+    // 未使用隔离模式 && 贷款上线 = 0
     return (!isolationModeActive && reserveConfig.getDebtCeiling() == 0);
   }
 }
