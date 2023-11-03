@@ -49,8 +49,8 @@ library DataTypes {
     //bit 61: borrowing in isolation mode is enabled
     //bit 62-63: reserved
     //bit 64-79: reserve factor
-    //bit 80-115 borrow cap in whole tokens, borrowCap == 0 => no cap
-    //bit 116-151 supply cap in whole tokens, supplyCap == 0 => no cap
+    //bit 80-115 borrow cap in whole tokens, borrowCap == 0 => no cap   35bit 最大: 34359738367
+    //bit 116-151 supply cap in whole tokens, supplyCap == 0 => no cap  35bit 最大: 34359738367
     //bit 152-167 liquidation protocol fee
     //bit 168-175 eMode category
     //bit 176-211 unbacked mint cap in whole tokens, unbackedMintCap == 0 => minting disabled

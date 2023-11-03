@@ -95,15 +95,20 @@ library ReserveLogic {
     DataTypes.ReserveData storage reserve,
     DataTypes.ReserveCache memory reserveCache
   ) internal {
+    // 时间没有变化, 则跳过状态更新
     // If time didn't pass since last stored timestamp, skip state update
     //solium-disable-next-line
     if (reserve.lastUpdateTimestamp == uint40(block.timestamp)) {
       return;
     }
 
+    // 更新线性指数, 复合指数
     _updateIndexes(reserve, reserveCache);
+
+    // 一部分贷款利息给财政部
     _accrueToTreasury(reserve, reserveCache);
 
+    // 更新时间戳
     //solium-disable-next-line
     reserve.lastUpdateTimestamp = uint40(block.timestamp);
   }
@@ -225,6 +230,8 @@ library ReserveLogic {
   }
 
   /**
+   * 将归还的利息部分存入到资产财政部, 做为资产因子的一个function.
+   *
    * @notice Mints part of the repaid interest to the reserve treasury as a function of the reserve factor for the
    * specific asset.
    * @param reserve The reserve to be updated
@@ -240,11 +247,13 @@ library ReserveLogic {
       return;
     }
 
+    // 上次更新时的贷款数额
     //calculate the total variable debt at moment of the last interaction
     vars.prevTotalVariableDebt = reserveCache.currScaledVariableDebt.rayMul(
       reserveCache.currVariableBorrowIndex
     );
 
+    // 到本次更新时的贷款数额
     //calculate the new total variable debt after accumulation of the interest on the index
     vars.currTotalVariableDebt = reserveCache.currScaledVariableDebt.rayMul(
       reserveCache.nextVariableBorrowIndex
@@ -257,10 +266,12 @@ library ReserveLogic {
       reserveCache.reserveLastUpdateTimestamp
     );
 
+    // 上次更新时的稳定利率贷款数额
     vars.prevTotalStableDebt = reserveCache.currPrincipalStableDebt.rayMul(
       vars.cumulatedStableInterest
     );
 
+    // 贷款增量(在这段时间内的贷款利息增量)
     //debt accrued is the sum of the current debt minus the sum of the debt at the last update
     vars.totalDebtAccrued =
       vars.currTotalVariableDebt +
@@ -268,8 +279,10 @@ library ReserveLogic {
       vars.prevTotalVariableDebt -
       vars.prevTotalStableDebt;
 
+    // 计算需要mint给财政部的数额(贷款利率>存款利率 那多余的coin给财政部)
     vars.amountToMint = vars.totalDebtAccrued.percentMul(reserveCache.reserveFactor);
 
+    // 这里没有真正mint, 先记录数额
     if (vars.amountToMint != 0) {
       reserve.accruedToTreasury += vars
         .amountToMint
@@ -279,6 +292,8 @@ library ReserveLogic {
   }
 
   /**
+   * 更新自动上次更新后, 到现在的时间段内, 存储收益利率累计和贷款利率的累计
+   *
    * @notice Updates the reserve indexes and the timestamp of the update.
    * @param reserve The reserve reserve to be updated
    * @param reserveCache The cache layer holding the cached protocol data
@@ -318,6 +333,8 @@ library ReserveLogic {
   }
 
   /**
+   * Reserve缓存, 频繁读取storage和外部合约, 提升执行速度.
+   *
    * @notice Creates a cache object to avoid repeated storage reads and external contract calls when updating state and
    * interest rates.
    * @param reserve The reserve object for which the cache will be filled
@@ -328,6 +345,7 @@ library ReserveLogic {
   ) internal view returns (DataTypes.ReserveCache memory) {
     DataTypes.ReserveCache memory reserveCache;
 
+    // 资产配置, 用uint256 bit表示
     reserveCache.reserveConfiguration = reserve.configuration;
     reserveCache.reserveFactor = reserveCache.reserveConfiguration.getReserveFactor();
     reserveCache.currLiquidityIndex = reserveCache.nextLiquidityIndex = reserve.liquidityIndex;

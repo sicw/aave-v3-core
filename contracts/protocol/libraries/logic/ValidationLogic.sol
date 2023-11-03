@@ -68,9 +68,13 @@ library ValidationLogic {
     require(!isPaused, Errors.RESERVE_PAUSED);
     require(!isFrozen, Errors.RESERVE_FROZEN);
 
+    // 获取存款容量(资金池不能超过最大容量)
     uint256 supplyCap = reserveCache.reserveConfiguration.getSupplyCap();
     require(
+      // =0代表不限制存储量
       supplyCap == 0 ||
+        // aToken存储 + 财政部收的部分贷款利息 + 本次amount <=
+        // supplyCap最大35bit, 最大值34359738367(343亿个token)
         ((IAToken(reserveCache.aTokenAddress).scaledTotalSupply() +
           uint256(reserve.accruedToTreasury)).rayMul(reserveCache.nextLiquidityIndex) + amount) <=
         supplyCap * (10 ** reserveCache.reserveConfiguration.getDecimals()),
