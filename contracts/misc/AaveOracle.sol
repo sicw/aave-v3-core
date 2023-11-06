@@ -23,7 +23,11 @@ contract AaveOracle is IAaveOracle {
   mapping(address => AggregatorInterface) private assetsSources;
 
   IPriceOracleGetter private _fallbackOracle;
+
+  // 基本货币
   address public immutable override BASE_CURRENCY;
+
+  // 基本货币单位
   uint256 public immutable override BASE_CURRENCY_UNIT;
 
   /**

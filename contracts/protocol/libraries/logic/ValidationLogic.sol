@@ -550,6 +550,7 @@ library ValidationLogic {
     address oracle
   ) internal view returns (uint256, bool) {
     (, , , , uint256 healthFactor, bool hasZeroLtvCollateral) = GenericLogic
+    // 计算用户抵押、贷款信息
       .calculateUserAccountData(
         reservesData,
         reservesList,
@@ -564,6 +565,7 @@ library ValidationLogic {
       );
 
     require(
+      // 健康度 >= 1
       healthFactor >= HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
       Errors.HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD
     );

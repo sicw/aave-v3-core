@@ -121,6 +121,7 @@ library SupplyLogic {
 
     reserve.updateState(reserveCache);
 
+    // 计算用户当前时刻aToken余额
     uint256 userBalance = IAToken(reserveCache.aTokenAddress).scaledBalanceOf(msg.sender).rayMul(
       reserveCache.nextLiquidityIndex
     );
@@ -131,17 +132,23 @@ library SupplyLogic {
       amountToWithdraw = userBalance;
     }
 
+    // 校验取出数量、资金池是否激活、暂停
     ValidationLogic.validateWithdraw(reserveCache, amountToWithdraw, userBalance);
 
+    // 更新当前时刻存款、贷款利率
     reserve.updateInterestRates(reserveCache, params.asset, 0, amountToWithdraw);
 
+    // 该资产是否做为抵押品
     bool isCollateral = userConfig.isUsingAsCollateral(reserve.id);
 
     if (isCollateral && amountToWithdraw == userBalance) {
+      // 用户把所有存款全部取出, 这个资金池在遍历时不再计算为抵押品
       userConfig.setUsingAsCollateral(reserve.id, false);
       emit ReserveUsedAsCollateralDisabled(params.asset, msg.sender);
     }
 
+    // 销毁aToken
+    // 发送标地资产给用户
     IAToken(reserveCache.aTokenAddress).burn(
       msg.sender,
       params.to,
@@ -149,7 +156,9 @@ library SupplyLogic {
       reserveCache.nextLiquidityIndex
     );
 
+    // 该资产做为抵押品 && 用户配置可以借任何东西
     if (isCollateral && userConfig.isBorrowingAny()) {
+      // 验证健康度和ltv
       ValidationLogic.validateHFAndLtv(
         reservesData,
         reservesList,

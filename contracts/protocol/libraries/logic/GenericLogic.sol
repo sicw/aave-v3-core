@@ -11,6 +11,7 @@ import {WadRayMath} from '../math/WadRayMath.sol';
 import {DataTypes} from '../types/DataTypes.sol';
 import {ReserveLogic} from './ReserveLogic.sol';
 import {EModeLogic} from './EModeLogic.sol';
+import '../../../../../protocol-v2/contracts/misc/interfaces/IWETH.sol';
 
 /**
  * @title GenericLogic library
@@ -74,6 +75,7 @@ library GenericLogic {
     CalculateUserAccountDataVars memory vars;
 
     if (params.userEModeCategory != 0) {
+      // 开启了EMode模式
       (vars.eModeLtv, vars.eModeLiqThreshold, vars.eModeAssetPrice) = EModeLogic
         .getEModeConfiguration(
           eModeCategories[params.userEModeCategory],
@@ -103,27 +105,29 @@ library GenericLogic {
       // 获取资产数据
       DataTypes.ReserveData storage currentReserve = reservesData[vars.currentReserveAddress];
 
+      // 获取当前资金池配置、信息
       (
-        vars.ltv,
-        vars.liquidationThreshold,
+        vars.ltv, // 贷款抵押比
+        vars.liquidationThreshold, // 清算阈值
         ,
-        vars.decimals,
+        vars.decimals, // 资产精度
         ,
-        vars.eModeAssetCategory
+        vars.eModeAssetCategory // eMode模式
       ) = currentReserve.configuration.getParams();
 
       unchecked {
         vars.assetUnit = 10 ** vars.decimals;
       }
 
-      // 获取价格
+      // 获取当前资产价格
       vars.assetPrice = vars.eModeAssetPrice != 0 &&
         params.userEModeCategory == vars.eModeAssetCategory
-        ? vars.eModeAssetPrice
-        : IPriceOracleGetter(params.oracle).getAssetPrice(vars.currentReserveAddress);
+        ? vars.eModeAssetPrice // 从eMode获取价格
+        : IPriceOracleGetter(params.oracle).getAssetPrice(vars.currentReserveAddress); // 从预言机获取价格, 价格是以美元为单位的, 例如输入ETH地址, 返回的价格是1899$
 
       // 清算阈值 != 0 && 允许做为抵押
       if (vars.liquidationThreshold != 0 && params.userConfig.isUsingAsCollateral(vars.i)) {
+        // 用户资产的价值 单位:$ 例如: USDT: 10000$
         vars.userBalanceInBaseCurrency = _getUserBalanceInBaseCurrency(
           params.user,
           currentReserve,
@@ -131,29 +135,34 @@ library GenericLogic {
           vars.assetUnit
         );
 
-        // 累计抵押的资产
+        // 累计抵押的资产价值
         vars.totalCollateralInBaseCurrency += vars.userBalanceInBaseCurrency;
 
+        // 是否用eMode模式
         vars.isInEModeCategory = EModeLogic.isInEModeCategory(
           params.userEModeCategory,
           vars.eModeAssetCategory
         );
 
         if (vars.ltv != 0) {
+          // 计算平均贷款抵押比
           vars.avgLtv +=
             vars.userBalanceInBaseCurrency *
             (vars.isInEModeCategory ? vars.eModeLtv : vars.ltv);
         } else {
+          // 是否是0抵押比贷款
           vars.hasZeroLtvCollateral = true;
         }
 
+        // 累计平均清算阈值 = 当前资产价值 * 清算阈值(eMode or not) => 抵押价值100$ 清算阈值80% 清算阈值=80$
         vars.avgLiquidationThreshold +=
           vars.userBalanceInBaseCurrency *
           (vars.isInEModeCategory ? vars.eModeLiqThreshold : vars.liquidationThreshold);
       }
 
-      // 允许做为借款
+      // 该资产允许做为借款
       if (params.userConfig.isBorrowing(vars.i)) {
+        // 累计用户贷款该资产的价值, 累计到一起就是该用户在aaveV3中的所有贷款的价值
         vars.totalDebtInBaseCurrency += _getUserDebtInBaseCurrency(
           params.user,
           currentReserve,
@@ -168,17 +177,23 @@ library GenericLogic {
     }
 
     unchecked {
+      // 计算所有资产的平均ltv
       vars.avgLtv = vars.totalCollateralInBaseCurrency != 0
         ? vars.avgLtv / vars.totalCollateralInBaseCurrency
         : 0;
+
+      // 不同资产有不同的清算阈值  平均清算阈值的价值(80$ + 120$ + 30$...) / 累计抵押的资产价值(100$ + 150$ + 50$) 80$对应100$ 120$对应150$ 50$对应30$
       vars.avgLiquidationThreshold = vars.totalCollateralInBaseCurrency != 0
         ? vars.avgLiquidationThreshold / vars.totalCollateralInBaseCurrency
         : 0;
     }
 
-    vars.healthFactor = (vars.totalDebtInBaseCurrency == 0)
+    // 健康度计算
+    vars.healthFactor = (vars.totalDebtInBaseCurrency == 0) // 没有贷款,健康度最高
       ? type(uint256).max
       : (vars.totalCollateralInBaseCurrency.percentMul(vars.avgLiquidationThreshold)).wadDiv(
+        // 有抵押贷款: 抵押价值*清算阈值 / 贷款价值
+        // 类比: (抵押房子的价值 * 80%) / 贷款价值, 也就是抵押房子100w 贷款80w 100w*80% / 80w = 1健康度最低, 房子再跌一点 健康度就<1了需要被清算
         vars.totalDebtInBaseCurrency
       );
     return (

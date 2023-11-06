@@ -118,10 +118,12 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
 
     // 收益 > 要取出
     if (balanceIncrease > amount) {
+      // 发送Mint消息
       uint256 amountToMint = balanceIncrease - amount;
       emit Transfer(address(0), user, amountToMint);
       emit Mint(user, user, amountToMint, balanceIncrease, index);
     } else {
+      // 发送Burn消息
       uint256 amountToBurn = amount - balanceIncrease;
       emit Transfer(user, address(0), amountToBurn);
       emit Burn(user, target, amountToBurn, balanceIncrease, index);
