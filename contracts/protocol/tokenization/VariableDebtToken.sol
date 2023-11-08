@@ -97,6 +97,7 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
     if (user != onBehalfOf) {
       _decreaseBorrowAllowance(onBehalfOf, user, amount);
     }
+    // mint缩放数量
     return (_mintScaled(user, onBehalfOf, amount, index), scaledTotalSupply());
   }
 

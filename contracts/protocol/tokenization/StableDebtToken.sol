@@ -141,17 +141,22 @@ contract StableDebtToken is DebtTokenBase, IncentivizedERC20, IStableDebtToken {
     // 当前平均稳定利率
     vars.currentAvgStableRate = _avgStableRate;
     // 下一次总的token数额 = 本次要贷的数量 + 之前总量
+    // 更新total总量
     vars.nextSupply = _totalSupply = vars.previousSupply + amount;
 
     vars.amountInRay = amount.wadToRay();
 
+    // 用户之前贷款的的稳定利率
     vars.currentStableRate = _userState[onBehalfOf].additionalData;
+
+    // (用户之前贷款利率 * 之前数量 + 本次贷款利率 * 本次贷款数量) / (用户之前贷款数量 + 本次贷款数量) 其实就是用户的平均贷款利率
     vars.nextStableRate = (vars.currentStableRate.rayMul(currentBalance.wadToRay()) +
       vars.amountInRay.rayMul(rate)).rayDiv((currentBalance + amount).wadToRay());
 
-    // 更新利率
+    // 更新用户贷款利率
     _userState[onBehalfOf].additionalData = vars.nextStableRate.toUint128();
 
+    // 更新操作时间戳
     //solium-disable-next-line
     _totalSupplyTimestamp = _timestamps[onBehalfOf] = uint40(block.timestamp);
 

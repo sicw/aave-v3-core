@@ -132,9 +132,11 @@ library BorrowLogic {
     }
 
     if (isFirstBorrowing) {
+      // 如果是第一次借款 设置用户在该token有借款
       userConfig.setBorrowing(reserve.id, true);
     }
 
+    // 如果是隔离模式贷款, 发送一条消息
     if (isolationModeActive) {
       uint256 nextIsolationModeTotalDebt = reservesData[isolationModeCollateralAddress]
         .isolationModeTotalDebt += (params.amount /
@@ -147,6 +149,7 @@ library BorrowLogic {
       );
     }
 
+    // 更新贷款、存款利率
     reserve.updateInterestRates(
       reserveCache,
       params.asset,
