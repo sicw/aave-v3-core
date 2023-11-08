@@ -194,13 +194,17 @@ library BorrowLogic {
   ) external returns (uint256) {
     DataTypes.ReserveData storage reserve = reservesData[params.asset];
     DataTypes.ReserveCache memory reserveCache = reserve.cache();
+
+    // 更新存款、贷款指数
     reserve.updateState(reserveCache);
 
+    // 获取贷款数额
     (uint256 stableDebt, uint256 variableDebt) = Helpers.getUserCurrentDebt(
       params.onBehalfOf,
       reserveCache
     );
 
+    // 验证还款条件 资金池是否暂停、激活
     ValidationLogic.validateRepay(
       reserveCache,
       params.amount,
@@ -234,6 +238,7 @@ library BorrowLogic {
       ).burn(params.onBehalfOf, paybackAmount, reserveCache.nextVariableBorrowIndex);
     }
 
+    // 更新贷款、存款利率
     reserve.updateInterestRates(
       reserveCache,
       params.asset,
@@ -241,10 +246,12 @@ library BorrowLogic {
       0
     );
 
+    // 如果没有贷款了 设置该用户在该资金池没有借款标识
     if (stableDebt + variableDebt - paybackAmount == 0) {
       userConfig.setBorrowing(reserve.id, false);
     }
 
+    // 更新隔离贷款
     IsolationModeLogic.updateIsolatedDebtIfIsolated(
       reservesData,
       reservesList,
