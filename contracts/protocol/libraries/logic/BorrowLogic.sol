@@ -74,14 +74,17 @@ library BorrowLogic {
     DataTypes.ReserveData storage reserve = reservesData[params.asset];
     DataTypes.ReserveCache memory reserveCache = reserve.cache();
 
+    // 更新存款、贷款指数
     reserve.updateState(reserveCache);
 
+    // 获取隔离状态
     (
       bool isolationModeActive,
       address isolationModeCollateralAddress,
       uint256 isolationModeDebtCeiling
     ) = userConfig.getIsolationModeState(reservesData, reservesList);
 
+    // 校验贷款条件
     ValidationLogic.validateBorrow(
       reservesData,
       reservesList,
@@ -108,8 +111,10 @@ library BorrowLogic {
     bool isFirstBorrowing = false;
 
     if (params.interestRateMode == DataTypes.InterestRateMode.STABLE) {
+      // 稳定利率贷款
       currentStableRate = reserve.currentStableBorrowRate;
 
+      // 增加贷款token数额
       (
         isFirstBorrowing,
         reserveCache.nextTotalStableDebt,
