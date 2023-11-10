@@ -160,6 +160,7 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
   ) public view override returns (uint256, uint256, uint256) {
     CalcInterestRatesLocalVars memory vars;
 
+    // 资金池的总贷款
     vars.totalDebt = params.totalStableDebt + params.totalVariableDebt;
 
     vars.currentLiquidityRate = 0;
@@ -167,19 +168,28 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
     vars.currentStableBorrowRate = getBaseStableBorrowRate();
 
     if (vars.totalDebt != 0) {
+      // 稳定性利率贷款占比
       vars.stableToTotalDebtRatio = params.totalStableDebt.rayDiv(vars.totalDebt);
+
+      // 可用的流动行资金
       vars.availableLiquidity =
         IERC20(params.reserve).balanceOf(params.aToken) +
         params.liquidityAdded -
         params.liquidityTaken;
 
+      // 现在可用的流动性资金 + 贷款出去的流动性资金
       vars.availableLiquidityPlusDebt = vars.availableLiquidity + vars.totalDebt;
+
+      // 借款使用率 = 总贷款 / 总流动性
       vars.borrowUsageRatio = vars.totalDebt.rayDiv(vars.availableLiquidityPlusDebt);
+
+      // 存款使用率? = 总贷款 / 所有流动性
       vars.supplyUsageRatio = vars.totalDebt.rayDiv(
         vars.availableLiquidityPlusDebt + params.unbacked
       );
     }
 
+    // 借款使用率 > 最优利率
     if (vars.borrowUsageRatio > OPTIMAL_USAGE_RATIO) {
       uint256 excessBorrowUsageRatio = (vars.borrowUsageRatio - OPTIMAL_USAGE_RATIO).rayDiv(
         MAX_EXCESS_USAGE_RATIO
@@ -193,6 +203,7 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
         _variableRateSlope1 +
         _variableRateSlope2.rayMul(excessBorrowUsageRatio);
     } else {
+      // 更新借款利率(稳定、可变)
       vars.currentStableBorrowRate += _stableRateSlope1.rayMul(vars.borrowUsageRatio).rayDiv(
         OPTIMAL_USAGE_RATIO
       );
@@ -202,12 +213,15 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
       );
     }
 
+    // 稳定性利率贷款占比 > 最佳占比利率
     if (vars.stableToTotalDebtRatio > OPTIMAL_STABLE_TO_TOTAL_DEBT_RATIO) {
       uint256 excessStableDebtRatio = (vars.stableToTotalDebtRatio -
         OPTIMAL_STABLE_TO_TOTAL_DEBT_RATIO).rayDiv(MAX_EXCESS_STABLE_TO_TOTAL_DEBT_RATIO);
+      // 稳定利率贷款适当增加利率
       vars.currentStableBorrowRate += _stableRateExcessOffset.rayMul(excessStableDebtRatio);
     }
 
+    // 权重平均贷款利率 * (总贷款 / 所有流动性)
     vars.currentLiquidityRate = _getOverallBorrowRate(
       params.totalStableDebt,
       params.totalVariableDebt,
@@ -247,6 +261,7 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
 
     uint256 weightedStableRate = totalStableDebt.wadToRay().rayMul(currentAverageStableBorrowRate);
 
+    // 带权重平均借款利率
     uint256 overallBorrowRate = (weightedVariableRate + weightedStableRate).rayDiv(
       totalDebt.wadToRay()
     );
