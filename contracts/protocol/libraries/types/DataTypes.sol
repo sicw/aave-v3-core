@@ -26,6 +26,7 @@ library DataTypes {
     //variableDebtToken address
     address variableDebtTokenAddress;
     //address of the interest rate strategy
+    // 收益计算策略地址
     address interestRateStrategyAddress;
     //the current treasury balance, scaled
     uint128 accruedToTreasury;

@@ -160,38 +160,47 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
   ) public view override returns (uint256, uint256, uint256) {
     CalcInterestRatesLocalVars memory vars;
 
-    // 资金池的总贷款
+    // 总贷款
     vars.totalDebt = params.totalStableDebt + params.totalVariableDebt;
 
     vars.currentLiquidityRate = 0;
+
+    // 当前贷款可变利率(基础利率)
     vars.currentVariableBorrowRate = _baseVariableBorrowRate;
+
+    // 当前贷款稳定利率(基础利率 = 可变利率Slope1 + 基本稳定利率增量)
     vars.currentStableBorrowRate = getBaseStableBorrowRate();
 
     if (vars.totalDebt != 0) {
       // 稳定性利率贷款占比
       vars.stableToTotalDebtRatio = params.totalStableDebt.rayDiv(vars.totalDebt);
 
-      // 可用的流动行资金
+      // 可用流动性 = 现有资金 +/- 本次数量
       vars.availableLiquidity =
         IERC20(params.reserve).balanceOf(params.aToken) +
         params.liquidityAdded -
         params.liquidityTaken;
 
-      // 现在可用的流动性资金 + 贷款出去的流动性资金
+      // 总流动性 = 可用流动性 + 总贷款流
       vars.availableLiquidityPlusDebt = vars.availableLiquidity + vars.totalDebt;
 
-      // 借款使用率 = 总贷款 / 总流动性
+      // 贷款使用率 = 总贷款 / 总流动性
       vars.borrowUsageRatio = vars.totalDebt.rayDiv(vars.availableLiquidityPlusDebt);
 
-      // 存款使用率? = 总贷款 / 所有流动性
+      // 存款使用率? = 总贷款 / (总流动性 + 桥接数量)
       vars.supplyUsageRatio = vars.totalDebt.rayDiv(
+        // unbacked是通过桥接得到的token
+        // 桥接新功能,一般为0
         vars.availableLiquidityPlusDebt + params.unbacked
       );
     }
 
-    // 借款使用率 > 最优利率
+    // 借款使用率 > 最佳贷款使用率0.8
     if (vars.borrowUsageRatio > OPTIMAL_USAGE_RATIO) {
+      // Slope2阶段的0.2的占比
       uint256 excessBorrowUsageRatio = (vars.borrowUsageRatio - OPTIMAL_USAGE_RATIO).rayDiv(
+        // 1 - OPTIMAL_USAGE_RATIO
+        // 1 - 0.8 = 0.2
         MAX_EXCESS_USAGE_RATIO
       );
 
@@ -203,7 +212,6 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
         _variableRateSlope1 +
         _variableRateSlope2.rayMul(excessBorrowUsageRatio);
     } else {
-      // 更新借款利率(稳定、可变)
       vars.currentStableBorrowRate += _stableRateSlope1.rayMul(vars.borrowUsageRatio).rayDiv(
         OPTIMAL_USAGE_RATIO
       );
