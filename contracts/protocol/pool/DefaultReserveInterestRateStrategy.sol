@@ -23,38 +23,49 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
   using WadRayMath for uint256;
   using PercentageMath for uint256;
 
+  // 借款最佳使用率
   /// @inheritdoc IDefaultInterestRateStrategy
   uint256 public immutable OPTIMAL_USAGE_RATIO;
 
+  // 最佳稳定利率借款占比(稳定利率借款/总借款)
   /// @inheritdoc IDefaultInterestRateStrategy
   uint256 public immutable OPTIMAL_STABLE_TO_TOTAL_DEBT_RATIO;
 
+  // 1 - OPTIMAL_USAGE_RATIO
   /// @inheritdoc IDefaultInterestRateStrategy
   uint256 public immutable MAX_EXCESS_USAGE_RATIO;
 
+  // 1 - OPTIMAL_STABLE_TO_TOTAL_DEBT_RATIO
   /// @inheritdoc IDefaultInterestRateStrategy
   uint256 public immutable MAX_EXCESS_STABLE_TO_TOTAL_DEBT_RATIO;
 
   IPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
 
+  // 可变利率贷款的基础利率
   // Base variable borrow rate when usage rate = 0. Expressed in ray
   uint256 internal immutable _baseVariableBorrowRate;
 
+  // 可变利率贷款Slope1(第一档)
   // Slope of the variable interest curve when usage ratio > 0 and <= OPTIMAL_USAGE_RATIO. Expressed in ray
   uint256 internal immutable _variableRateSlope1;
 
+  // 可变利率贷款Slope1(第二档)
   // Slope of the variable interest curve when usage ratio > OPTIMAL_USAGE_RATIO. Expressed in ray
   uint256 internal immutable _variableRateSlope2;
 
+  // 稳定利率贷款Slope1(第一档)
   // Slope of the stable interest curve when usage ratio > 0 and <= OPTIMAL_USAGE_RATIO. Expressed in ray
   uint256 internal immutable _stableRateSlope1;
 
+  // 稳定利率贷款Slope1(第二档)
   // Slope of the stable interest curve when usage ratio > OPTIMAL_USAGE_RATIO. Expressed in ray
   uint256 internal immutable _stableRateSlope2;
 
+  // 加上_variableRateSlope1后变为可变利率的基本利率
   // Premium on top of `_variableRateSlope1` for base stable borrowing rate
   uint256 internal immutable _baseStableRateOffset;
 
+  // 当稳定利率贷款占比(总贷款) > OPTIMAL_STABLE_TO_TOTAL_DEBT_RATIO时, 最大溢出利率
   // Additional premium applied to stable rate when stable debt surpass `OPTIMAL_STABLE_TO_TOTAL_DEBT_RATIO`
   uint256 internal immutable _stableRateExcessOffset;
 
@@ -221,8 +232,10 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
       );
     }
 
-    // 稳定性利率贷款占比 > 最佳占比利率
+    // 稳定性利率贷款占比 > 最佳占比利率(50% > 30%)
     if (vars.stableToTotalDebtRatio > OPTIMAL_STABLE_TO_TOTAL_DEBT_RATIO) {
+      // 横坐标, 使用率占比
+      // (50% - 30%) / (1 - 30%)
       uint256 excessStableDebtRatio = (vars.stableToTotalDebtRatio -
         OPTIMAL_STABLE_TO_TOTAL_DEBT_RATIO).rayDiv(MAX_EXCESS_STABLE_TO_TOTAL_DEBT_RATIO);
       // 稳定利率贷款适当增加利率
