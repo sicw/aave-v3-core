@@ -56,6 +56,7 @@ library ReserveLogic {
       return reserve.liquidityIndex;
     } else {
       return
+        // 相对于上次流动性指数(reserve.liquidityIndex) 计算这段时间内的(block.timestamp - reserve.lastUpdateTimestamp)线性增长倍数
         MathUtils.calculateLinearInterest(reserve.currentLiquidityRate, timestamp).rayMul(
           reserve.liquidityIndex
         );

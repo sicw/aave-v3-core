@@ -5,33 +5,60 @@ library DataTypes {
   struct ReserveData {
     //stores the reserve configuration
     ReserveConfigurationMap configuration;
+
+    // 流动性指数
     //the liquidity index. Expressed in ray
     uint128 liquidityIndex;
+
+    // 当前存款利率
     //the current supply rate. Expressed in ray
     uint128 currentLiquidityRate;
+
+    // 可变利率借款指数
     //variable borrow index. Expressed in ray
     uint128 variableBorrowIndex;
+
+    // 当前可变利率借款利率
     //the current variable borrow rate. Expressed in ray
     uint128 currentVariableBorrowRate;
+
+    // 当前稳定利率借款利率
     //the current stable borrow rate. Expressed in ray
     uint128 currentStableBorrowRate;
+
+    // 最后一次更新的时间戳
     //timestamp of last update
     uint40 lastUpdateTimestamp;
+
+    // 资产id
     //the id of the reserve. Represents the position in the list of the active reserves
     uint16 id;
+
+    // 标的资产的aToken
     //aToken address
     address aTokenAddress;
+
+    // 稳定利率借款token
     //stableDebtToken address
     address stableDebtTokenAddress;
+
+    // 可变利率借款token
     //variableDebtToken address
     address variableDebtTokenAddress;
+
     //address of the interest rate strategy
     // 收益计算策略地址
     address interestRateStrategyAddress;
+
+    // 给项目方的
     //the current treasury balance, scaled
     uint128 accruedToTreasury;
+
+    // 外部跨链桥接unbacked的atoken
     //the outstanding unbacked aTokens minted through the bridging feature
     uint128 unbacked;
+
+    // 隔离模式的总贷款
     //the outstanding debt borrowed against this asset in isolation mode
     uint128 isolationModeTotalDebt;
   }
