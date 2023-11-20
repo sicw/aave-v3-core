@@ -92,12 +92,14 @@ library FlashLoanLogic {
     for (vars.i = 0; vars.i < params.assets.length; vars.i++) {
       vars.currentAmount = params.amounts[vars.i];
       vars.totalPremiums[vars.i] = vars.currentAmount.percentMul(vars.flashloanPremiumTotal);
+      // 给user发送代币
       IAToken(reservesData[params.assets[vars.i]].aTokenAddress).transferUnderlyingTo(
         params.receiverAddress,
         vars.currentAmount
       );
     }
 
+    // 调用业务逻辑
     require(
       vars.receiver.executeOperation(
         params.assets,
@@ -242,6 +244,7 @@ library FlashLoanLogic {
 
     reserve.updateInterestRates(reserveCache, params.asset, amountPlusPremium, 0);
 
+    // 将闪电贷资产从用户转移回资金池
     IERC20(params.asset).safeTransferFrom(
       params.receiverAddress,
       reserveCache.aTokenAddress,
