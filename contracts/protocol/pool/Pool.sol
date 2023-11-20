@@ -360,11 +360,11 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
 
   /// @inheritdoc IPool
   function liquidationCall(
-    address collateralAsset,
-    address debtAsset,
-    address user,
-    uint256 debtToCover,
-    bool receiveAToken
+    address collateralAsset, // 被清算人的抵押标的资产
+    address debtAsset, // 被清算人贷款的标的资产
+    address user, // 被清算人
+    uint256 debtToCover, // 清算人想要覆盖的贷款数额
+    bool receiveAToken // 是否接收aToken
   ) public virtual override {
     LiquidationLogic.executeLiquidationCall(
       _reserves,

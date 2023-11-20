@@ -47,6 +47,7 @@ library LiquidationLogic {
   );
 
   /**
+   * 在清算时要归还借款人贷款的百分比50%
    * @dev Default percentage of borrower's debt to be repaid in a liquidation.
    * @dev Percentage applied when the users health factor is above `CLOSE_FACTOR_HF_THRESHOLD`
    * Expressed in bps, a value of 0.5e4 results in 50.00%
@@ -54,6 +55,7 @@ library LiquidationLogic {
   uint256 internal constant DEFAULT_LIQUIDATION_CLOSE_FACTOR = 0.5e4;
 
   /**
+   * 在清算时要归还借款人贷款的百分比100%
    * @dev Maximum percentage of borrower's debt to be repaid in a liquidation
    * @dev Percentage applied when the users health factor is below `CLOSE_FACTOR_HF_THRESHOLD`
    * Expressed in bps, a value of 1e4 results in 100.00%
@@ -108,14 +110,14 @@ library LiquidationLogic {
   ) external {
     LiquidationCallLocalVars memory vars;
 
-    // 抵押资产地址是清算人传进来的, 一次清算只能操作被清算人的一中抵押资产
+    // 抵押资产地址是清算人传进来的, 一次清算只能操作被清算人的一种抵押资产
     DataTypes.ReserveData storage collateralReserve = reservesData[params.collateralAsset]; // 被清算人其中一个抵押资产数据
     DataTypes.ReserveData storage debtReserve = reservesData[params.debtAsset]; // 被清算人贷款数据
     DataTypes.UserConfigurationMap storage userConfig = usersConfig[params.user];
 
     vars.debtReserveCache = debtReserve.cache();
 
-    // 更新流动性指数
+    // 更新贷款资金池流动性指数
     debtReserve.updateState(vars.debtReserveCache);
 
     // 计算被清算人账户数据(健康度)
@@ -192,10 +194,10 @@ library LiquidationLogic {
       emit ReserveUsedAsCollateralDisabled(params.collateralAsset, params.user);
     }
 
-    // 燃烧对应的贷款token
+    // 燃烧被清算人的贷款token
     _burnDebtTokens(params, vars);
 
-    // 更新贷款利率、流动性利率
+    // 更新贷款利率、流动性利率(归还贷款后资金使用率变化了)
     debtReserve.updateInterestRates(
       vars.debtReserveCache,
       params.debtAsset,
@@ -394,12 +396,15 @@ library LiquidationLogic {
 
     uint256 userTotalDebt = userStableDebt + userVariableDebt;
 
+    // 要清算借款人贷款的百分比
     uint256 closeFactor = healthFactor > CLOSE_FACTOR_HF_THRESHOLD
       ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
       : MAX_LIQUIDATION_CLOSE_FACTOR;
 
+    // 最大清算数额
     uint256 maxLiquidatableDebt = userTotalDebt.percentMul(closeFactor);
 
+    // 清算人传进来的要清算的数额 > 最大清算数额
     uint256 actualDebtToLiquidate = params.debtToCover > maxLiquidatableDebt
       ? maxLiquidatableDebt
       : params.debtToCover;
