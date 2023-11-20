@@ -108,12 +108,14 @@ library LiquidationLogic {
   ) external {
     LiquidationCallLocalVars memory vars;
 
+    // 抵押资产地址是清算人传进来的, 一次清算只能操作被清算人的一中抵押资产
     DataTypes.ReserveData storage collateralReserve = reservesData[params.collateralAsset];
     DataTypes.ReserveData storage debtReserve = reservesData[params.debtAsset];
     DataTypes.UserConfigurationMap storage userConfig = usersConfig[params.user];
     vars.debtReserveCache = debtReserve.cache();
     debtReserve.updateState(vars.debtReserveCache);
 
+    // 计算被清算人账户数据
     (, , , , vars.healthFactor, ) = GenericLogic.calculateUserAccountData(
       reservesData,
       reservesList,
@@ -127,12 +129,14 @@ library LiquidationLogic {
       })
     );
 
+    // 计算稳定利率、可变利率贷款
     (vars.userVariableDebt, vars.userTotalDebt, vars.actualDebtToLiquidate) = _calculateDebt(
       vars.debtReserveCache,
       params,
       vars.healthFactor
     );
 
+    // 校验是否可清算
     ValidationLogic.validateLiquidationCall(
       userConfig,
       collateralReserve,
@@ -144,6 +148,7 @@ library LiquidationLogic {
       })
     );
 
+    // 获取资产配置数据
     (
       vars.collateralAToken,
       vars.collateralPriceSource,
