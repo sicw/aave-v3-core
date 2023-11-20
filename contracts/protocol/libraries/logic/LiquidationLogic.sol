@@ -134,7 +134,7 @@ library LiquidationLogic {
       })
     );
 
-    // 计算被清算人的稳定利率、可变利率贷款
+    // 清算时归还的贷款有百分比限制, 计算在该资产上能清算最大数量
     (vars.userVariableDebt, vars.userTotalDebt, vars.actualDebtToLiquidate) = _calculateDebt(
       vars.debtReserveCache,
       params,
@@ -155,15 +155,16 @@ library LiquidationLogic {
 
     // 获取资产配置数据
     (
-      vars.collateralAToken,
-      vars.collateralPriceSource,
-      vars.debtPriceSource,
-      vars.liquidationBonus
+      vars.collateralAToken, // 抵押资产AToken
+      vars.collateralPriceSource, // 抵押品资金池
+      vars.debtPriceSource, // 贷款资金池
+      vars.liquidationBonus // 清算奖励
     ) = _getConfigurationData(eModeCategories, collateralReserve, params);
 
+    // 获取借款人抵押的aToken数量
     vars.userCollateralBalance = vars.collateralAToken.balanceOf(params.user);
 
-    // 计算真实的抵押、贷款数量
+    // 计算真实被清算的抵押、真实被清算的贷款数量、清算协议费用
     (
       vars.actualCollateralToLiquidate,
       vars.actualDebtToLiquidate,
@@ -180,10 +181,11 @@ library LiquidationLogic {
     );
 
     if (vars.userTotalDebt == vars.actualDebtToLiquidate) {
-      // 说明都给偿还了
+      // 说明都被清算了, 没有借款了
       userConfig.setBorrowing(debtReserve.id, false);
     }
 
+    // 如果该抵押资产都被清算了, 借款人不能再用该资产做为抵押
     // If the collateral being liquidated is equal to the user balance,
     // we set the currency as not being used as collateral anymore
     if (
@@ -222,6 +224,7 @@ library LiquidationLogic {
       _burnCollateralATokens(collateralReserve, params, vars);
     }
 
+    // 给项目方发送清算协议费用
     // Transfer fee to treasury if it is non-zero
     if (vars.liquidationProtocolFeeAmount != 0) {
       uint256 liquidityIndex = collateralReserve.getNormalizedIncome();
@@ -428,6 +431,7 @@ library LiquidationLogic {
     DataTypes.ExecuteLiquidationCallParams memory params
   ) internal view returns (IAToken, address, address, uint256) {
     IAToken collateralAToken = IAToken(collateralReserve.aTokenAddress);
+    // 抵押资产清算奖励
     uint256 liquidationBonus = collateralReserve.configuration.getLiquidationBonus();
 
     address collateralPriceSource = params.collateralAsset;
