@@ -83,6 +83,12 @@ library LiquidationLogic {
   }
 
   /**
+   * 1. 计算被清算人截止到现在所有贷款价值(ETH)
+   * 2. 计算被清算人截止到现在所有抵押价值(ETH)
+   * 3. 计算被清算人安全度, 是否可以被清算
+   * 4. 清算人归还贷款
+   * 5. 被清算人抵押资产转给清算人
+   *
    * @notice Function to liquidate a position if its Health Factor drops below 1. The caller (liquidator)
    * covers `debtToCover` amount of debt of the user getting liquidated, and receives
    * a proportional amount of the `collateralAsset` plus a bonus to cover market risk
