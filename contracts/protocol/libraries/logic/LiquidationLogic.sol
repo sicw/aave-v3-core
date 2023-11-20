@@ -109,13 +109,16 @@ library LiquidationLogic {
     LiquidationCallLocalVars memory vars;
 
     // 抵押资产地址是清算人传进来的, 一次清算只能操作被清算人的一中抵押资产
-    DataTypes.ReserveData storage collateralReserve = reservesData[params.collateralAsset];
-    DataTypes.ReserveData storage debtReserve = reservesData[params.debtAsset];
+    DataTypes.ReserveData storage collateralReserve = reservesData[params.collateralAsset]; // 被清算人其中一个抵押资产数据
+    DataTypes.ReserveData storage debtReserve = reservesData[params.debtAsset]; // 被清算人贷款数据
     DataTypes.UserConfigurationMap storage userConfig = usersConfig[params.user];
+
     vars.debtReserveCache = debtReserve.cache();
+
+    // 更新流动性指数
     debtReserve.updateState(vars.debtReserveCache);
 
-    // 计算被清算人账户数据
+    // 计算被清算人账户数据(健康度)
     (, , , , vars.healthFactor, ) = GenericLogic.calculateUserAccountData(
       reservesData,
       reservesList,
@@ -129,7 +132,7 @@ library LiquidationLogic {
       })
     );
 
-    // 计算稳定利率、可变利率贷款
+    // 计算被清算人的稳定利率、可变利率贷款
     (vars.userVariableDebt, vars.userTotalDebt, vars.actualDebtToLiquidate) = _calculateDebt(
       vars.debtReserveCache,
       params,
@@ -158,6 +161,7 @@ library LiquidationLogic {
 
     vars.userCollateralBalance = vars.collateralAToken.balanceOf(params.user);
 
+    // 计算真实的抵押、贷款数量
     (
       vars.actualCollateralToLiquidate,
       vars.actualDebtToLiquidate,
@@ -174,6 +178,7 @@ library LiquidationLogic {
     );
 
     if (vars.userTotalDebt == vars.actualDebtToLiquidate) {
+      // 说明都给偿还了
       userConfig.setBorrowing(debtReserve.id, false);
     }
 
@@ -187,8 +192,10 @@ library LiquidationLogic {
       emit ReserveUsedAsCollateralDisabled(params.collateralAsset, params.user);
     }
 
+    // 燃烧对应的贷款token
     _burnDebtTokens(params, vars);
 
+    // 更新贷款利率、流动性利率
     debtReserve.updateInterestRates(
       vars.debtReserveCache,
       params.debtAsset,
@@ -196,6 +203,7 @@ library LiquidationLogic {
       0
     );
 
+    // 更新隔离贷款数据
     IsolationModeLogic.updateIsolatedDebtIfIsolated(
       reservesData,
       reservesList,
@@ -205,8 +213,10 @@ library LiquidationLogic {
     );
 
     if (params.receiveAToken) {
+      // 给清算人发送aToken
       _liquidateATokens(reservesData, reservesList, usersConfig, collateralReserve, params, vars);
     } else {
+      // 发送标的资产
       _burnCollateralATokens(collateralReserve, params, vars);
     }
 
@@ -228,6 +238,7 @@ library LiquidationLogic {
       );
     }
 
+    // 清算人归还贷款
     // Transfers the debt asset being repaid to the aToken, where the liquidity is kept
     IERC20(params.debtAsset).safeTransferFrom(
       msg.sender,
@@ -302,6 +313,7 @@ library LiquidationLogic {
     LiquidationCallLocalVars memory vars
   ) internal {
     uint256 liquidatorPreviousATokenBalance = IERC20(vars.collateralAToken).balanceOf(msg.sender);
+    // 给清算人发送aToken
     vars.collateralAToken.transferOnLiquidation(
       params.user,
       msg.sender,

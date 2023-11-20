@@ -106,7 +106,7 @@ library ReserveLogic {
     // 更新线性指数, 复合指数
     _updateIndexes(reserve, reserveCache);
 
-    // 一部分贷款利息给财政部
+    // 一部分贷款利息给财政部(项目方)
     _accrueToTreasury(reserve, reserveCache);
 
     // 更新时间戳
