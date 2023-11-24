@@ -677,6 +677,7 @@ library ValidationLogic {
 
     // if user is trying to set another category than default we require that
     // either the user is not borrowing, or it's borrowing assets of categoryId
+    // 如果用户还没有贷款 或者 借款都是支持该categoryId模式
     if (categoryId != 0) {
       unchecked {
         for (uint256 i = 0; i < reservesCount; i++) {

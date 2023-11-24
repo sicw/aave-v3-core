@@ -90,6 +90,7 @@ library EModeLogic {
     uint256 eModeAssetPrice = 0;
     address eModePriceSource = category.priceSource;
 
+    // eMode模式的价格源
     if (eModePriceSource != address(0)) {
       eModeAssetPrice = oracle.getAssetPrice(eModePriceSource);
     }

@@ -74,8 +74,8 @@ library GenericLogic {
 
     CalculateUserAccountDataVars memory vars;
 
+    // 开启了EMode模式
     if (params.userEModeCategory != 0) {
-      // 开启了EMode模式
       (vars.eModeLtv, vars.eModeLiqThreshold, vars.eModeAssetPrice) = EModeLogic
         .getEModeConfiguration(
           eModeCategories[params.userEModeCategory],
