@@ -250,6 +250,8 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
       vars.currentVariableBorrowRate,
       params.averageStableBorrowRate
     ).rayMul(vars.supplyUsageRatio).percentMul(
+        // 资产预留的准备金, 应对客户提款和其他风险, 比如使用90%的资金用来贷款, 保留10%应对风险, 对应到下面的公式就是
+        // 存款利率 = 流动性利率 = 贷款利率 * 资金使用率 * 90% = 贷款利率 * 90%的资金使用率(如果没有备用金使用率是可以到100%的). 反应到用户身上就是存款利率降低了。
         PercentageMath.PERCENTAGE_FACTOR - params.reserveFactor
       );
 
