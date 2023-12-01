@@ -13,8 +13,10 @@ import {ReserveConfiguration} from './ReserveConfiguration.sol';
 library UserConfiguration {
   using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
 
+  // 0101
   uint256 internal constant BORROWING_MASK =
     0x5555555555555555555555555555555555555555555555555555555555555555;
+  // 1010
   uint256 internal constant COLLATERAL_MASK =
     0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;
 
@@ -111,6 +113,7 @@ library UserConfiguration {
   }
 
   /**
+   * 只有一个资产做为抵押
    * @notice Checks if a user has been supplying only one reserve as collateral
    * @dev this uses a simple trick - if a number is a power of two (only one bit set) then n & (n - 1) == 0
    * @param self The configuration object
@@ -124,6 +127,7 @@ library UserConfiguration {
   }
 
   /**
+   * 有任何资产做为抵押
    * @notice Checks if a user has been supplying any reserve as collateral
    * @param self The configuration object
    * @return True if the user has been supplying as collateral any reserve, false otherwise
@@ -177,11 +181,14 @@ library UserConfiguration {
     mapping(address => DataTypes.ReserveData) storage reservesData,
     mapping(uint256 => address) storage reservesList
   ) internal view returns (bool, address, uint256) {
+    // 只有一个资产做为抵押
     if (isUsingAsCollateralOne(self)) {
+      // 获取第一个做为抵押资产的id
       uint256 assetId = _getFirstAssetIdByMask(self, COLLATERAL_MASK);
 
       address assetAddress = reservesList[assetId];
       uint256 ceiling = reservesData[assetAddress].configuration.getDebtCeiling();
+      // 这个资产贷款有上限
       if (ceiling != 0) {
         return (true, assetAddress, ceiling);
       }
@@ -214,6 +221,7 @@ library UserConfiguration {
   }
 
   /**
+   * 获取第一个标记的bit位的资产id
    * @notice Returns the address of the first asset flagged in the bitmap given the corresponding bitmask
    * @param self The configuration object
    * @return The index of the first asset flagged in the bitmap once the corresponding mask is applied

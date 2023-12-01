@@ -430,7 +430,7 @@ library ReserveConfiguration {
    *
    * @notice Gets the debt ceiling for the asset if the asset is in isolation mode
    * @param self The reserve configuration
-   * @return The debt ceiling (0 = isolation mode disabled)
+   * @return The debt ceiling (0 = isolation mode disabled) 贷款上限, 0表示无上限
    */
   function getDebtCeiling(
     DataTypes.ReserveConfigurationMap memory self
