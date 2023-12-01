@@ -80,7 +80,7 @@ library BorrowLogic {
     // 获取隔离状态
     (
       bool isolationModeActive,
-      address isolationModeCollateralAddress,
+      address isolationModeCollateralAddress, // 隔离模式抵押资产地址
       uint256 isolationModeDebtCeiling
     ) = userConfig.getIsolationModeState(reservesData, reservesList);
 
@@ -139,6 +139,9 @@ library BorrowLogic {
     // 如果是隔离模式贷款, 发送一条消息
     if (isolationModeActive) {
       uint256 nextIsolationModeTotalDebt = reservesData[isolationModeCollateralAddress]
+      // 保留两位精度, 小数点后2位
+      // 比如资产支持小数点后6位, 我存入1.000000 实际amount = 1000000
+      // 下面的计算后 1000000 / 10^(6-2) = 1000000 / 10000 = 100 精度变成1.00 小数点后两位了
         .isolationModeTotalDebt += (params.amount /
         10 **
           (reserveCache.reserveConfiguration.getDecimals() -

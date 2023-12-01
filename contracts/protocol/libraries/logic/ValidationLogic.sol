@@ -197,6 +197,9 @@ library ValidationLogic {
       );
 
       require(
+        // 保留两位精度, 小数点后2位
+        // 比如资产支持小数点后6位, 我存入1.000000 实际amount = 1000000
+        // 下面的计算后 1000000 / 10^(6-2) = 1000000 / 10000 = 100 精度变成1.00 小数点后两位了
         reservesData[params.isolationModeCollateralAddress].isolationModeTotalDebt +
           (params.amount /
             10 ** (vars.reserveDecimals - ReserveConfiguration.DEBT_CEILING_DECIMALS))

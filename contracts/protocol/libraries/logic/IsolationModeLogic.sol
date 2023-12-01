@@ -48,6 +48,7 @@ library IsolationModeLogic {
 
       // since the debt ceiling does not take into account the interest accrued, it might happen that amount
       // repaid > debt in isolation mode
+      // 贷款上线没有计算贷款利息, 所以归还的可能会比上限要多
       if (isolationModeTotalDebt <= isolatedDebtRepaid) {
         reservesData[isolationModeCollateralAddress].isolationModeTotalDebt = 0;
         emit IsolationModeTotalDebtUpdated(isolationModeCollateralAddress, 0);
