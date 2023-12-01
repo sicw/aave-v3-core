@@ -46,7 +46,7 @@ abstract contract IncentivizedERC20 is Context, IERC20Detailed {
    */
   struct UserState {
     uint128 balance;
-    // 上次操作后的index
+    // 上次操作后的稳定利率
     uint128 additionalData;
   }
   // Map of users address and their state data (userAddress => userStateData)

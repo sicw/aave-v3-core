@@ -34,6 +34,8 @@ library MathUtils {
   }
 
   /**
+   * 输入: 上次操作的利率, 上次操作时间, 当前时间戳
+   * 输出: 该时间段内的增长的利息的倍数
    * @dev Function to calculate the interest using a compounded interest rate formula
    * To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
    *
