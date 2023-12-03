@@ -714,7 +714,7 @@ library ValidationLogic {
     DataTypes.UserConfigurationMap storage userConfig,
     DataTypes.ReserveConfigurationMap memory reserveConfig
   ) internal view returns (bool) {
-    // 用户纬度配置, 任何资产都可以抵押
+    // 如果没有任何资产做为抵押, 那么这次存储的资产可以做为抵押
     if (!userConfig.isUsingAsCollateralAny()) {
       return true;
     }
