@@ -721,7 +721,7 @@ library ValidationLogic {
     // 获取是否使用隔离模式
     (bool isolationModeActive, , ) = userConfig.getIsolationModeState(reservesData, reservesList);
 
-    // 未使用隔离模式 && 贷款上线 = 0
+    // 未使用隔离模式 && 贷款无上限限制
     return (!isolationModeActive && reserveConfig.getDebtCeiling() == 0);
   }
 }
