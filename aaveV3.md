@@ -30,7 +30,7 @@
 资金使用率为 90% 大于 80% 在第二阶段 利率 = 基本利率 + 4% + $$\frac{90\% - 80\%}{20\%}$$ _ 75%
 
 ![image.png](https://img.learnblockchain.cn/attachments/2023/11/Y4DVqEkE6565c39cc9551.png)
-
+图 1
 ###1.2.2 存款利率计算  
 存款利率 = 流动性利率 = 资金使用率 _ 借款利率 = $$\frac{借出去的钱}{总存储的钱}$$ _ $$\frac{借出去的钱产生的利息}{借出去的钱}$$ = $$\frac{借出去的钱产生的利息}{总存储的钱}$$  
 它的含义就是每存入一份钱，可产生的收益。
@@ -113,12 +113,12 @@ aaveV3 代码如下
 ```
 
 #2、取款
-我们到银行取款拿着凭证输入密码, 取出现金。同样的我们在 aave 中取款时，使用 aToken 取回我们存入的资产。取回资产后资金池的总量发生了变化, 资金使用率也发生了变化。贷款利率变了存储利率也变了。
-需要重新计算贷款利率、存款利率
-贷款利率(根据上图计算), 代码如下:
+我们到银行取款拿着凭证输入密码取出现金。同样的在 aave 中取款时，使用 aToken 做为凭证取回我们存入的资产。  
+取回资产后资金池的总量发生了变化，导致资金使用率发生变化，贷款利率发生变换，存储利率发生变化。所以需要重新计算贷款利率、存款利率。  
+贷款利率(根据上图 1 计算)，代码如下:
 
 ```
-    // 如果资金使用率>80%
+    // 如果资金使用率大于80%
     if (vars.borrowUsageRatio > OPTIMAL_USAGE_RATIO) {
       uint256 excessBorrowUsageRatio = (vars.borrowUsageRatio - OPTIMAL_USAGE_RATIO).rayDiv(
         MAX_EXCESS_USAGE_RATIO
@@ -132,7 +132,7 @@ aaveV3 代码如下
         _variableRateSlope1 +
         _variableRateSlope2.rayMul(excessBorrowUsageRatio);
     } else {
-      // 资金使用率 <= 80%
+      // 资金使用率小于等于80%
       vars.currentStableBorrowRate += _stableRateSlope1.rayMul(vars.borrowUsageRatio).rayDiv(
         OPTIMAL_USAGE_RATIO
       );
@@ -141,9 +141,6 @@ aaveV3 代码如下
       );
     }
 ```
-
-存款利率:
-同上代码
 
 #3、借款
 在 aave 协议中贷款利率分两种, 稳定利率和可变利率。稳定利率指的是在第一次借入之后在归还贷款前都是按照借入时的利率计算， 不论中间有多少次存款、借款操作导致资金使用率变化了多少(如果贷款利率比存款利率还低 会被官方 rebalance)。 另一种就是可变利率, 随着资金池的使用率，每次操作资金池利率都会变化。贷款的利息是每个阶段的利率累计出来的。
@@ -391,6 +388,7 @@ function calculateUserAccountData(
 
 被隔离的资产风险系数比较高, 或者出问题影响比较大。隔离的资产都有个借款上限(使用该资产做为抵押品最多能借多少美元) 使用隔离的资产做抵押品时 只能借入稳定币。
 
+用户想要用该资产进行抵押，做借款时。会有一些要求。
 有几个关键点:
 
 1. 隔离资产有借入贷款上限(使用该资产最多能借入多少$)
