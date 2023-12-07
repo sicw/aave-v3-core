@@ -153,14 +153,14 @@ aaveV3 代码如下
 1、比如我有 1000eth，存入 aave 可以赚利息，同时我再借出 800eth 做其他投资赚取额外收益。
 2、我有好多币种，存储在 aave 中赚取利息并且很看好它们的未来趋势不想售卖，但是又急需另一种币度应对短暂的问题。
 
-##3.1、在 aave 中借款利息计算方式
-在上面存款中，计算存款余额时 b = 本金 + 利息。  
-可变利率计算方式与存款计算方式一样, 只不过借款利率是复利计算方式, 存款利率是单利计算方式。
-比如在 t1-t2 时间段内，本金 m，利率是 r 利息是不一样的。  
-单利计算：
-本金 + 利息 = m + $$\frac{m*r}{1 year seconds}$$ \* (t2 - t1)
+##3.1、在 aave 中利息的计算方式
+存款和可变利率借款的存储计算方式一样，都是通过累计指数与缩放余额计算。
+但它俩利息的计算方式不同，借款是复利计算, 存款是单利计算。  
+比如在 t1-t2 时间段内，本金 m，利率是 r，最终余额是不一样的。  
+###3.1.1 单利计算
+b = m + $$\frac{m*r}{1 year seconds}$$ \* (t2 - t1)
 
-复利计算：
+###3.1.1 复利计算
 可以做个简单推导
 
 ```
@@ -184,7 +184,7 @@ b3 = b0 \* R<sub>3</sub>
 b3 = b0 \* $(\frac{R}{365}+1)^{3}$
 
 所以在 t1-t2 时间段内的余额如下
-本金 + 利息 = m \* $(\frac{r}{1 year seconds}+1)^{t2-t1}$
+b = m \* $(\frac{r}{1 year seconds}+1)^{t2-t1}$
 aave V3 合约代码:
 
 ```
@@ -194,15 +194,13 @@ aave V3 合约代码:
         uint256 timeDifference = block.timestamp.sub(uint256(_lastUpdateTimestamp));
         // 年化利率转化成秒级利率
         uint256 ratePerSecond = _rate.div(SECONDS_PER_YEAR);
-        // 本金增加的倍数, 再乘以m就是本金+利息
+        // 本金增加的倍数, 再乘以本金就是余额
         return ratePerSecond.add(WadRayMath.ray()).rayPow(timeDifference);
     }
 ```
 
-说完计算方式, 我们再看下稳定利率和可变利率的不同。
-可变利率借款与存款利率计算逻辑相同, 每次操作都会 '累计贷款利息指数'。在借入贷款时同样使用缩放余额存储。
-
-稳定利率有些特殊, 稳定利率需要保存用户初始借款时的利率, 无论后面怎么变都以当时的利率计算利息
+##3.2、稳定利率
+稳定利率计算余额时需要用户初始借款时的利率，无论后面怎么变都以当时的利率计算利息，代码如下：
 
 ```
   function balanceOf(address account) public view virtual override returns (uint256) {
@@ -219,13 +217,13 @@ aave V3 合约代码:
       stableRate,
       _timestamps[account]
     );
-    // 乘以本金 = 当前余额
+    // 再乘以本金 = 当前余额
     return accountBalance.rayMul(cumulatedInterest);
   }
 ```
 
-aave 协议中贷款使用的是超额抵押贷款, 比如你想借价值 800eth 的资产, 你需要存储价值 1000eth 的资产到协议中。在贷款时会遍历所有资金池看用户是否有足够的抵押。
-计算用户数据
+##3.2 超额抵押
+aave 协议中借款使用的是超额抵押，比如你想借价值 800eth 的资产，需要存储价值 1000eth 的资产到协议中。在贷款时会遍历所有资金池看用户是否有足够的抵押。代码如下
 
 ```
 function calculateUserAccountData(
@@ -234,106 +232,8 @@ function calculateUserAccountData(
     mapping(uint8 => DataTypes.EModeCategory) storage eModeCategories,
     DataTypes.CalculateUserAccountDataParams memory params
   ) internal view returns (uint256, uint256, uint256, uint256, uint256, bool) {
-    if (params.userConfig.isEmpty()) {
-      return (0, 0, 0, 0, type(uint256).max, false);
-    }
-    CalculateUserAccountDataVars memory vars;
-    // 开启了EMode模式, 有自定义的LTV, 清算阈值, 货币价格
-    if (params.userEModeCategory != 0) {
-      (vars.eModeLtv, vars.eModeLiqThreshold, vars.eModeAssetPrice) = EModeLogic
-        .getEModeConfiguration(
-          eModeCategories[params.userEModeCategory],
-          IPriceOracleGetter(params.oracle)
-        );
-    }
-
-    // 遍历所有资金池
-    while (vars.i < params.reservesCount) {
-      // 用户是否允许用该资产作为抵押
-      if (!params.userConfig.isUsingAsCollateralOrBorrowing(vars.i)) {
-        unchecked {
-          ++vars.i;
-        }
-        continue;
-      }
-      vars.currentReserveAddress = reservesList[vars.i];
-      if (vars.currentReserveAddress == address(0)) {
-        unchecked {
-          ++vars.i;
-        }
-        continue;
-      }
-      DataTypes.ReserveData storage currentReserve = reservesData[vars.currentReserveAddress];
-      (
-        vars.ltv, // 贷款抵押比
-        vars.liquidationThreshold, // 清算阈值
-        ,
-        vars.decimals, // 资产精度
-        ,
-        vars.eModeAssetCategory // eMode类型
-      ) = currentReserve.configuration.getParams();
-      unchecked {
-        vars.assetUnit = 10 ** vars.decimals;
-      }
-      // 获取当前货币价格
-      vars.assetPrice = vars.eModeAssetPrice != 0 &&
-        params.userEModeCategory == vars.eModeAssetCategory
-        ? vars.eModeAssetPrice // 从eMode获取价格
-        : IPriceOracleGetter(params.oracle).getAssetPrice(vars.currentReserveAddress);
-
-      if (vars.liquidationThreshold != 0 && params.userConfig.isUsingAsCollateral(vars.i)) {
-        vars.userBalanceInBaseCurrency = _getUserBalanceInBaseCurrency(
-          params.user,
-          currentReserve,
-          vars.assetPrice,
-          vars.assetUnit
-        );
-
-        // 累计抵押的资产价值
-        vars.totalCollateralInBaseCurrency += vars.userBalanceInBaseCurrency;
-        vars.isInEModeCategory = EModeLogic.isInEModeCategory(
-          params.userEModeCategory,
-          vars.eModeAssetCategory
-        );
-
-        if (vars.ltv != 0) {
-          vars.avgLtv +=
-            vars.userBalanceInBaseCurrency *
-            (vars.isInEModeCategory ? vars.eModeLtv : vars.ltv);
-        } else {
-          vars.hasZeroLtvCollateral = true;
-        }
-        vars.avgLiquidationThreshold +=
-          vars.userBalanceInBaseCurrency *
-          (vars.isInEModeCategory ? vars.eModeLiqThreshold : vars.liquidationThreshold);
-      }
-
-      // 该资产允许做为借款
-      if (params.userConfig.isBorrowing(vars.i)) {
-        // 累计用户贷款该资产的价值, 累计到一起就是该用户在aaveV3中的所有贷款的价值
-        vars.totalDebtInBaseCurrency += _getUserDebtInBaseCurrency(
-          params.user,
-          currentReserve,
-          vars.assetPrice,
-          vars.assetUnit
-        );
-      }
-
-      unchecked {
-        ++vars.i;
-      }
-    }
-
-    unchecked {
-      vars.avgLtv = vars.totalCollateralInBaseCurrency != 0
-        ? vars.avgLtv / vars.totalCollateralInBaseCurrency
-        : 0;
-
-      vars.avgLiquidationThreshold = vars.totalCollateralInBaseCurrency != 0
-        ? vars.avgLiquidationThreshold / vars.totalCollateralInBaseCurrency
-        : 0;
-    }
-
+    // 遍历所有资产，累计抵押资产
+    // ...中间略
     // 健康度计算
     vars.healthFactor = (vars.totalDebtInBaseCurrency == 0)
       ? type(uint256).max
@@ -350,7 +250,10 @@ function calculateUserAccountData(
     );
 ```
 
-隔离资产
+#4、还款
+在还贷款时, 是要先还利息, 可以先还部分资金。还款之后资金使用率发生变化, 需要重新计算借贷利率。
+
+#5 隔离资产
 官方设置的一些资金池不允许无限借款, 与公共参数和模式隔离开。
 对于用户: 存入资产有贷款上线, 资金池不会被借空。当我想用资金时可快速赎回 而不是等到有人还款在取回。
 
@@ -399,7 +302,7 @@ function calculateUserAccountData(
 2. 使用隔离资产 只能借入由官方指定的稳定币
 3. 隔离资产是官方投票得出来的
 
-EMode 模式
+#6 EMode 模式
 不同资产的利率，清算阈值，价格不一样。相当于在贷款时有高 中 低多种风险可用。
 高效模式中, ltv 从 73% -> 90% 贷款能力提升 风险系数也变高了。
 当抵押品和借入的资产有相关性时, 比如 usdt dai usdc 都和美元锚定, 如果美元跌了 usdt dai usdc 都会跌。这种情况下在计算健康度时也不会下降太多$$\frac{接入资产价值}{抵押资产价值*LTV}$$ 所以这种情况下 LTV 可以提升一些, 清算阈值、手续费都有优化 这样可以提升贷款能力。
@@ -407,10 +310,7 @@ EMode 模式
 *稳定币
 *ETH 相关
 
-#4、还款
-在还贷款时, 是要先还利息, 可以先还部分资金。还款之后资金使用率发生变化, 需要重新计算借贷利率。
-
-#5、清算
+#7、清算
 清算一种资金
 先偿还借款，然后将抵押金转给清算人。
 清算人最多归还一个借入资产的 50%, 并且获得一个抵押资产的清算奖金。
@@ -418,11 +318,11 @@ EMode 模式
 
 存入 5 eth 和 价值 5 eth 的 fyi, 借入 5eth 价值的 dai。在清算时 归还 50%的 dai, fyi 的清算奖金是 15% eth 清算奖金是 5%, 所以选用 fyi 的奖金(只能选一种) 2.5eth \* 0.15 = 0.375eth 所以 清算人一共会得到价值 2.5eth + 0.375eth 价值的 fyi 资产
 
-#6、闪电贷
+#8、闪电贷
 在一个交易中, 完成借款和还款。同时提供一些交易手续费。
 用户实现自定义合约, 然后用户发送交易到 aave 合约, 将控制权交给 aave 闪电贷合约, 在闪电贷合约中将资金转移给用户，然后再调用户自定义的合约, 调用完成后检查状态，将用户贷款转附带利息转给 aave。如果这中间发生异常则终止交易。
 
-#7、跨链桥
+#9、跨链桥
 在 arib 链中的资金转移到 eth 网络上。
 
 swap token 兑换
