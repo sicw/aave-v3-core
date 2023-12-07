@@ -58,7 +58,7 @@ library DataTypes {
     //the outstanding unbacked aTokens minted through the bridging feature
     uint128 unbacked;
 
-    // 隔离模式的总贷款
+    // 隔离模式下, 该资产做为抵押品, 最多能借贷多少USD
     //the outstanding debt borrowed against this asset in isolation mode
     uint128 isolationModeTotalDebt;
   }
@@ -74,7 +74,7 @@ library DataTypes {
     //bit 58: borrowing is enabled
     //bit 59: stable rate borrowing enabled
     //bit 60: asset is paused
-    //bit 61: borrowing in isolation mode is enabled
+    //bit 61: borrowing in isolation mode is enabled  在隔离模式下可借款
     //bit 62-63: reserved
     //bit 64-79: reserve factor
     //bit 80-115 borrow cap in whole tokens, borrowCap == 0 => no cap   35bit 最大: 34359738367
