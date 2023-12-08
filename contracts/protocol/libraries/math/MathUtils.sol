@@ -56,33 +56,36 @@ library MathUtils {
   ) internal pure returns (uint256) {
     //solium-disable-next-line
     uint256 exp = currentTimestamp - uint256(lastUpdateTimestamp);
-
     if (exp == 0) {
       return WadRayMath.RAY;
     }
-
     uint256 expMinusOne;
     uint256 expMinusTwo;
     uint256 basePowerTwo;
     uint256 basePowerThree;
     unchecked {
+      // n-1
       expMinusOne = exp - 1;
-
+      // n-2
       expMinusTwo = exp > 2 ? exp - 2 : 0;
-
+      // x^2
       basePowerTwo = rate.rayMul(rate) / (SECONDS_PER_YEAR * SECONDS_PER_YEAR);
+      // x^3
       basePowerThree = basePowerTwo.rayMul(rate) / SECONDS_PER_YEAR;
     }
-
+    // 第二项
+    // n * (n-1) * x^2
     uint256 secondTerm = exp * expMinusOne * basePowerTwo;
     unchecked {
       secondTerm /= 2;
     }
+    // 第三项
+    // n * (n-1) * (n-2) * x^3
     uint256 thirdTerm = exp * expMinusOne * expMinusTwo * basePowerThree;
     unchecked {
       thirdTerm /= 6;
     }
-
+    // 1+nx+[n/2(n-1)]x^2+[n/6(n-1)*(n-2)*x^3
     return WadRayMath.RAY + (rate * exp) / SECONDS_PER_YEAR + secondTerm + thirdTerm;
   }
 
