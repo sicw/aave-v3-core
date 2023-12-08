@@ -43,7 +43,7 @@ aave 是去中心化 Defi 协议，用户可以在上面存款、贷款、闪电
 存款利率 = 流动性利率 = 资金使用率 _ 借款利率 = $$\frac{借出去的钱}{总存储的钱}$$ _ $$\frac{借出去的钱产生的利息}{借出去的钱}$$ = $$\frac{借出去的钱产生的利息}{总存储的钱}$$  
 它的含义就是每存入一份钱，可产生的收益。
 
-aave v3 计算存款收益率代码如下:
+aavev3 计算存款收益率代码如下:
 
 ```
     vars.currentLiquidityRate = _getOverallBorrowRate(  // 借款利率
@@ -200,7 +200,7 @@ b3 = b0 \* $(\frac{R}{365}+1)^{3}$
 
 所以在 t1-t2 时间段内的余额如下
 b = m \* $(\frac{r}{1 year seconds}+1)^{t2-t1}$
-aave V3 合约代码:
+aaveV3 合约代码:
 
 ```
     function calculateCompoundedInterest(uint256 _rate, uint40 _lastUpdateTimestamp) internal view returns (uint256)
