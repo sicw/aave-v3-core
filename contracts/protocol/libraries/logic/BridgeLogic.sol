@@ -65,6 +65,7 @@ library BridgeLogic {
 
     ValidationLogic.validateSupply(reserveCache, reserve, amount);
 
+    // 铸造'无担保'aToken的容量
     uint256 unbackedMintCap = reserveCache.reserveConfiguration.getUnbackedMintCap();
     uint256 reserveDecimals = reserveCache.reserveConfiguration.getDecimals();
 

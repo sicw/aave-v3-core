@@ -199,10 +199,9 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
       vars.borrowUsageRatio = vars.totalDebt.rayDiv(vars.availableLiquidityPlusDebt);
 
       // 存款使用率 = 总贷款 / 总存款(总流动性 + 桥接的存款)
-      // 与上面贷款利率用的区别是, 贷款使用率的分母是都可以贷款的, 存款使用率的分母是所有存储的钱(包含了不可借出的部分)
+      // 与上面贷款利率用的区别是, 贷款使用率的分母是都可以贷款的, 存款使用率的分母是所有存储的钱(unbacked的token也是要分利息的)
       vars.supplyUsageRatio = vars.totalDebt.rayDiv(
         // unbacked是通过桥接得到的token
-        // 桥接新功能,一般为0
         vars.availableLiquidityPlusDebt + params.unbacked
       );
     }
