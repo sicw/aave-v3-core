@@ -76,6 +76,7 @@ library BridgeLogic {
       Errors.UNBACKED_MINT_CAP_EXCEEDED
     );
 
+    // 流动性利率降低(被稀释了)
     reserve.updateInterestRates(reserveCache, asset, 0, 0);
 
     bool isFirstSupply = IAToken(reserveCache.aTokenAddress).mint(

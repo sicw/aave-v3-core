@@ -196,12 +196,14 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
       vars.availableLiquidityPlusDebt = vars.availableLiquidity + vars.totalDebt;
 
       // 贷款使用率 = 总贷款 / 总流动性
+      // 上面在计算availableLiquidity时使用的balanceOf，已经将unbacked的数量算上了，这不会有问题么
       vars.borrowUsageRatio = vars.totalDebt.rayDiv(vars.availableLiquidityPlusDebt);
 
       // 存款使用率 = 总贷款 / 总存款(总流动性 + 桥接的存款)
       // 与上面贷款利率用的区别是, 贷款使用率的分母是都可以贷款的, 存款使用率的分母是所有存储的钱(unbacked的token也是要分利息的)
       vars.supplyUsageRatio = vars.totalDebt.rayDiv(
         // unbacked是通过桥接得到的token
+        // todo 这块是不是加了两次，因为在Bridge中 mintToUser了
         vars.availableLiquidityPlusDebt + params.unbacked
       );
     }
