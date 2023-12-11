@@ -254,10 +254,12 @@ library ValidationLogic {
       vars.amountInBaseCurrency /= vars.assetUnit;
     }
 
+    // 比如抵押贷款比为70%，用户已经借入50w，本次又要借入20w，所以需要抵押数额为 (50w + 20w) / 70%
     //add the current already borrowed amount to the amount requested to calculate the total collateral needed.
     vars.collateralNeededInBaseCurrency = (vars.userDebtInBaseCurrency + vars.amountInBaseCurrency)
       .percentDiv(vars.currentLtv); //LTV is calculated in percentage
 
+    // 一共需要借的价值要 <= 所有抵押价值
     require(
       vars.collateralNeededInBaseCurrency <= vars.userCollateralInBaseCurrency,
       Errors.COLLATERAL_CANNOT_COVER_NEW_BORROW

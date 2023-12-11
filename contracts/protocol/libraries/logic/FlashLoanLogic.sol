@@ -226,7 +226,9 @@ library FlashLoanLogic {
     DataTypes.ReserveData storage reserve,
     DataTypes.FlashLoanRepaymentParams memory params
   ) internal {
+    // 给官方
     uint256 premiumToProtocol = params.totalPremium.percentMul(params.flashLoanPremiumToProtocol);
+    // 给流动性池子，所有存储用户分
     uint256 premiumToLP = params.totalPremium - premiumToProtocol;
     uint256 amountPlusPremium = params.amount + params.totalPremium;
 
@@ -248,7 +250,7 @@ library FlashLoanLogic {
     IERC20(params.asset).safeTransferFrom(
       params.receiverAddress,
       reserveCache.aTokenAddress,
-      amountPlusPremium
+      amountPlusPremium // 借出去的数量 + 保险费
     );
 
     IAToken(reserveCache.aTokenAddress).handleRepayment(
