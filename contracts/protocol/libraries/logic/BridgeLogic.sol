@@ -129,8 +129,8 @@ library BridgeLogic {
 
     uint256 backingAmount = (amount < reserve.unbacked) ? amount : reserve.unbacked;
 
-    uint256 feeToProtocol = fee.percentMul(protocolFeeBps);
-    uint256 feeToLP = fee - feeToProtocol;
+    uint256 feeToProtocol = fee.percentMul(protocolFeeBps); // 给协议的
+    uint256 feeToLP = fee - feeToProtocol; // 给流动性池子的
     uint256 added = backingAmount + fee;
 
     reserveCache.nextLiquidityIndex = reserve.cumulateToLiquidityIndex(
@@ -139,6 +139,7 @@ library BridgeLogic {
       feeToLP
     );
 
+    // 应计入库务署 就是给协议多少
     reserve.accruedToTreasury += feeToProtocol.rayDiv(reserveCache.nextLiquidityIndex).toUint128();
 
     reserve.unbacked -= backingAmount.toUint128();
