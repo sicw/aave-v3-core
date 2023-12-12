@@ -188,7 +188,7 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
 
       // 可用流动性 = 现有资金 +/- 本次数量
       vars.availableLiquidity =
-        IERC20(params.reserve).balanceOf(params.aToken) +
+        IERC20(params.reserve).balanceOf(params.aToken) + // 这里计算的是标的Token中aToken地址的余额，不是取的aToken total
         params.liquidityAdded -
         params.liquidityTaken;
 
@@ -204,6 +204,7 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
       vars.supplyUsageRatio = vars.totalDebt.rayDiv(
         // unbacked是通过桥接得到的token
         // todo 这块是不是加了两次，因为在Bridge中 mintToUser了
+        // 解答: 在Bridge中 mintToUser 的是aToken 不是标的资产，在上面计算总存储量时用的是标的资产，所以这里存款使用率加上了unbacked，借款使用率没有加上unbacked
         vars.availableLiquidityPlusDebt + params.unbacked
       );
     }

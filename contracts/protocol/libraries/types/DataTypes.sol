@@ -108,6 +108,7 @@ library DataTypes {
     uint16 liquidationBonus;
     // each eMode category may or may not have a custom oracle to override the individual assets price oracles
     // 价格源, 使用另一个资产锚定该资产价格。不是替换预言机
+    // 同一种资产使用同一种预言机，这样可以消除，由于不同预言机带来的差价导致被清算
     address priceSource;
     // 标签
     string label;

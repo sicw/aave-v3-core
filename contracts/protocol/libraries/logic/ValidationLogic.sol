@@ -514,6 +514,7 @@ library ValidationLogic {
 
     require(
       params.priceOracleSentinel == address(0) ||
+        // 在临近破产时(HF < 0.95) 也可以被清算
         params.healthFactor < MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD ||
         IPriceOracleSentinel(params.priceOracleSentinel).isLiquidationAllowed(),
       Errors.PRICE_ORACLE_SENTINEL_CHECK_FAILED
