@@ -204,7 +204,7 @@ contract DefaultReserveInterestRateStrategy is IDefaultInterestRateStrategy {
       vars.supplyUsageRatio = vars.totalDebt.rayDiv(
         // unbacked是通过桥接得到的token
         // todo 这块是不是加了两次，因为在Bridge中 mintToUser了
-        // 解答: 在Bridge中 mintToUser 的是aToken 不是标的资产，在上面计算总存储量时用的是标的资产，所以这里存款使用率加上了unbacked，借款使用率没有加上unbacked
+        // 解答: 在Bridge中 mintToUser 的是aToken 不是标的资产，在上面计算总存储量时用的是标的资产，所以这里存款使用率加上了unbacked，借款使用率没有加上unbacked(还不在标的资产中)
         vars.availableLiquidityPlusDebt + params.unbacked
       );
     }
