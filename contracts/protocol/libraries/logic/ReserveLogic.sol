@@ -196,7 +196,7 @@ library ReserveLogic {
     ) = IReserveInterestRateStrategy(reserve.interestRateStrategyAddress).calculateInterestRates(
       DataTypes.CalculateInterestRatesParams({
         unbacked: reserve.unbacked,
-        liquidityAdded: liquidityAdded,
+        liquidityAdded: liquidityAdded, // 添加到流动性中(可被借出的资产，流动性么，能存能借才算流动性)，在计算存款、借款时都会用到 unbacked就不是流动性，没有算在availableLiquidity中
         liquidityTaken: liquidityTaken,
         totalStableDebt: reserveCache.nextTotalStableDebt,
         totalVariableDebt: vars.totalVariableDebt,

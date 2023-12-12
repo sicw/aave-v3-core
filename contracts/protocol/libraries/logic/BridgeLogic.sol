@@ -36,6 +36,7 @@ library BridgeLogic {
   event BackUnbacked(address indexed reserve, address indexed backer, uint256 amount, uint256 fee);
 
   /**
+   * 铸造无实物的aToken，还没有标的资产·
    * @notice Mint unbacked aTokens to a user and updates the unbacked for the reserve.
    * @dev Essentially a supply without transferring the underlying.
    * @dev Emits the `MintUnbacked` event
@@ -141,8 +142,11 @@ library BridgeLogic {
     reserve.accruedToTreasury += feeToProtocol.rayDiv(reserveCache.nextLiquidityIndex).toUint128();
 
     reserve.unbacked -= backingAmount.toUint128();
+
+    // 添加到流动性中，之前是放在了unbacked中，不算流动性
     reserve.updateInterestRates(reserveCache, asset, added, 0);
 
+    // 将aToken对应的标的资产转到aave中
     IERC20(asset).safeTransferFrom(msg.sender, reserveCache.aTokenAddress, added);
 
     emit BackUnbacked(asset, msg.sender, backingAmount, fee);
